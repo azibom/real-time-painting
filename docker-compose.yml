@@ -1,0 +1,12 @@
+version: "3.3"
+services:
+  node:
+    image: "node:latest"
+    working_dir: /var/src
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./src:/var/src
+    ports:
+        - "3000:3000"
+    command: "npm start"

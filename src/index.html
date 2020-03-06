@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <button id="hash_generator" type="button">Generate room Url</button>
+    <button id="copy" type="button">Lets copy it! And Share It</button>
+    <a id="message">Go To The Lab</a>
+    <div id="show_link"></div>
+    <input type="text" value="Copy me!" id="myInput">
+    <script>
+      function makeid(length) {
+        var result           = '';
+        var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var charactersLength = characters.length;
+        for ( var i = 0; i < length; i++ ) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+      }
+
+      var base_url = window.location.origin;
+     
+      $(document).ready(function(){
+        function copyIt() {
+          var copyText = document.getElementById("myInput");
+          copyText.select();
+          document.execCommand("copy");
+          alert("Copied the text: " + copyText.value);
+        }
+
+        $("#hash_generator").click(function(){
+          var invite_url = base_url + "/" + makeid(10);
+          $("#message").attr("href", invite_url);
+          $("#myInput").attr("value", invite_url);
+        });
+
+        $("#copy").click(function(){
+          var that_is_link = $("#message").attr("href")
+          copyIt();
+        });
+      });
+    </script>
+  </body>
+</html>    
+
+

@@ -1,0 +1,158 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+    .container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 95vh;
+    }
+
+    .drawing-area {
+      box-shadow: 0 0 6px 0 #999;
+    }
+
+    .clear-button {
+      margin: 2em;
+      font-size: 16px;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="item">  
+      <div id="container" class="container">
+        <canvas id="drawing-area" class="drawing-area" height="600" width="600"></canvas>
+        <button id="clear-button" class="clear-button" type="button">Clear</button>
+      </div>
+    </div>
+    </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+  <script>
+  var hash =<%-JSON.stringify(data)%>;
+  lab_code = hash;
+  var socket = io('http://localhost:3000');
+  socket.emit('subscribe', lab_code);
+
+  const canvas = document.getElementById('drawing-area');
+  const canvasContext = canvas.getContext('2d');
+  const clearButton = document.getElementById('clear-button');
+  const state = {
+    mousedown: false
+  };
+
+  const lineWidth = 5;
+  const halfLineWidth = lineWidth / 2;
+  const fillStyle = '#333';
+  const strokeStyle = '#333';
+  const shadowColor = '#333';
+  const shadowBlur = lineWidth / 4;
+
+  canvas.addEventListener('mousedown', handleWritingStart);
+  canvas.addEventListener('mousemove', handleWritingInProgress);
+  canvas.addEventListener('mouseup', handleDrawingEnd);
+  canvas.addEventListener('mouseout', handleDrawingEnd);
+
+  canvas.addEventListener('touchstart', handleWritingStart);
+  canvas.addEventListener('touchmove', handleWritingInProgress);
+  canvas.addEventListener('touchend', handleDrawingEnd);
+  clearButton.addEventListener('click', handleClearButtonClick);
+
+  function handleWritingStart(event) {
+    event.preventDefault();
+    const mousePos = getMosuePositionOnCanvas(event);
+    canvasContext.beginPath();
+    canvasContext.moveTo(mousePos.x, mousePos.y);
+    canvasContext.lineWidth = lineWidth;
+    canvasContext.strokeStyle = strokeStyle;
+    canvasContext.shadowColor = null;
+    canvasContext.shadowBlur = null;
+    canvasContext.fill();
+    state.mousedown = true;
+    socket.emit('send message', {
+              room: lab_code,
+              state: "start",
+              point: [mousePos.x , mousePos.y]
+          });
+  }
+
+  function handleWritingInProgress(event) {
+    event.preventDefault();
+    
+    if (state.mousedown) {
+      const mousePos = getMosuePositionOnCanvas(event);
+      socket.emit('send message', {
+              room: lab_code,
+              state: "moving",
+              point: [mousePos.x , mousePos.y]
+          });
+    }
+  }
+
+  function handleDrawingEnd(event) {
+    event.preventDefault();
+    if (state.mousedown) {
+      canvasContext.shadowColor = shadowColor;
+      canvasContext.shadowBlur = shadowBlur;
+      canvasContext.stroke();
+      socket.emit('send message', {
+              room: lab_code,
+              state: "end",
+              point: [0 , 0]
+          });
+    }
+    
+    state.mousedown = false;
+  }
+
+  function handleClearButtonClick(event) {
+    event.preventDefault();
+    clearCanvas();
+  }
+
+  function getMosuePositionOnCanvas(event) {
+    const clientX = event.clientX || event.touches[0].clientX;
+    const clientY = event.clientY || event.touches[0].clientY;
+    const { offsetLeft, offsetTop } = event.target;
+    const canvasX = clientX - offsetLeft;
+    const canvasY = clientY - offsetTop;
+
+    return { x: canvasX, y: canvasY };
+  }
+
+  function clearCanvas() {
+    canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  socket.on('conversation_private', function(response){
+    data = response.data
+
+    if(data.state == "moving") {
+      canvasContext.lineTo(data.point[0], data.point[1]);
+      canvasContext.stroke();
+    } else if(data.state == "end") {
+      canvasContext.shadowColor = shadowColor;
+      canvasContext.shadowBlur = shadowBlur;
+      canvasContext.stroke();
+      state.mousedown = false;
+    } else if(data.state == "start") {
+      canvasContext.beginPath();
+      canvasContext.moveTo(data.point[0], data.point[1]);
+      canvasContext.lineWidth = lineWidth;
+      canvasContext.strokeStyle = strokeStyle;
+      canvasContext.shadowColor = null;
+      canvasContext.shadowBlur = null;
+      canvasContext.fill();
+      state.mousedown = true;
+    } else {
+      console.log("nothing")
+    }
+  });
+  </script>
+  </body>
+</html>    
+
+
